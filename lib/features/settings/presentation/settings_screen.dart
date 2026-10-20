@@ -1,14 +1,73 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/ota/update_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/apple_ui.dart';
 import '../../templates/presentation/template_list_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(packageInfoProvider.future);
+    });
+  }
+
+  String _statusLabel(UpdateUiState state) {
+    switch (state.phase) {
+      case UpdateFlowPhase.checking:
+        return 'Checking…';
+      case UpdateFlowPhase.upToDate:
+        return 'Up to date';
+      case UpdateFlowPhase.available:
+        return 'Update ${state.available?.versionName ?? ''} available';
+      case UpdateFlowPhase.downloading:
+        final pct = ((state.progress ?? 0) * 100).round();
+        return 'Downloading… $pct%';
+      case UpdateFlowPhase.readyToInstall:
+        return 'Opening installer…';
+      case UpdateFlowPhase.error:
+        return state.errorMessage ?? 'Update failed';
+      case UpdateFlowPhase.idle:
+        return 'Tap to check for updates';
+    }
+  }
+
+  Future<void> _checkForUpdate() async {
+    await ref.read(updateControllerProvider.notifier).checkForUpdate();
+  }
+
+  Future<void> _downloadAndInstall() async {
+    await ref.read(updateControllerProvider.notifier).downloadAndInstall();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final packageInfo = ref.watch(packageInfoProvider);
+    final updateState = ref.watch(updateControllerProvider);
+    final busy = updateState.phase == UpdateFlowPhase.checking ||
+        updateState.phase == UpdateFlowPhase.downloading ||
+        updateState.phase == UpdateFlowPhase.readyToInstall;
+
+    final versionLabel = packageInfo.when(
+      data: (info) => '${info.version} (${info.buildNumber})',
+      loading: () => '…',
+      error: (_, __) => 'Unknown',
+    );
+
+    final canInstall = updateState.phase == UpdateFlowPhase.available ||
+        updateState.phase == UpdateFlowPhase.error;
+
     return Scaffold(
       backgroundColor: AppColors.groupedBackground(context),
       appBar: appleAppBar(
@@ -35,6 +94,29 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+            ],
+          ),
+          const AppleSectionLabel('App'),
+          AppleInsetGroup(
+            children: [
+              AppleListRow(
+                title: 'Version',
+                subtitle: versionLabel,
+                leading: Icon(CupertinoIcons.info_circle, color: AppColors.systemBlue),
+              ),
+              AppleListRow(
+                title: 'Check for update',
+                subtitle: _statusLabel(updateState),
+                leading: Icon(CupertinoIcons.arrow_down_circle, color: AppColors.systemBlue),
+                onTap: busy ? null : _checkForUpdate,
+              ),
+              if (canInstall && updateState.available != null)
+                AppleListRow(
+                  title: 'Download & install',
+                  subtitle: updateState.available!.versionName,
+                  leading: Icon(CupertinoIcons.cloud_download, color: AppColors.systemBlue),
+                  onTap: busy ? null : _downloadAndInstall,
+                ),
             ],
           ),
         ],

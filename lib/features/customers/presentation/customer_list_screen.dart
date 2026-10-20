@@ -8,6 +8,7 @@ import '../../families/application/family_notifier.dart';
 import '../../families/data/family.dart';
 import '../../families/presentation/family_detail_screen.dart';
 import '../../families/presentation/family_form_dialog.dart';
+import '../../../core/ota/update_launch_prompt.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../application/customer_notifier.dart';
 import '../data/customer.dart';
@@ -23,6 +24,14 @@ class CustomerListScreen extends ConsumerStatefulWidget {
 
 class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      maybeShowUpdateLaunchPrompt(context, ref);
+    });
+  }
 
   @override
   void dispose() {
