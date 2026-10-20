@@ -55,6 +55,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (info == null) {
       final pkg = await ref.read(packageInfoProvider.future);
+      if (!mounted) return;
       await showCupertinoDialog<void>(
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
