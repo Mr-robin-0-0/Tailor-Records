@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ota/update_controller.dart';
+import '../../../core/ota/update_publisher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/apple_ui.dart';
 import '../../templates/presentation/template_list_screen.dart';
@@ -81,7 +82,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final download = await showAppleConfirmDialog(
       context,
       title: 'Update available',
-      message: 'Version ${info.versionName} is available on GitHub.',
+      message: UpdatePublisher.availableMessage(info.versionName),
       cancel: 'Later',
       confirm: 'Download',
     );

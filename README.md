@@ -28,6 +28,21 @@ Without a release keystore, CI signs with the **debug** key. OTA only works if e
 2. Copy `android/key.properties.example` to `android/key.properties` and fill in passwords.
 3. Add GitHub repository secrets: `KEYSTORE_BASE64` (base64 of the `.jks` file), `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`.
 
+### “App not installed” / conflicts with existing package
+
+Android blocks the install when the APK is signed with a **different certificate** than the app already on the phone.
+
+Common cause: you installed via **`flutter run`** or a **local** `flutter build apk` (your Mac’s debug key), then tried to install a **GitHub Release** APK (CI’s debug key). Same package name, different signatures.
+
+**Fix (one time):**
+
+1. Uninstall **Tailor Records** from the device (Settings → Apps → Tailor Records → Uninstall).  
+   Local data is removed unless you have a backup.
+2. Install only from [GitHub Releases](https://github.com/Mr-robin-0-0/Tailor-Records/releases) (`TailorRecords.apk`).
+3. For OTA updates after that, use **Check for update** in the app or install the next release APK over the previous **release** install.
+
+To avoid this long term, use one **upload keystore** for both local release builds and CI (see Release signing below).
+
 ### Verify OTA manually
 
 1. Install build `+N` on a device (sideload the release APK).

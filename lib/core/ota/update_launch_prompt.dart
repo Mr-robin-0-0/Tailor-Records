@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../widgets/apple_ui.dart';
 import 'update_controller.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'update_publisher.dart';
 
 bool updateLaunchPromptShownThisSession = false;
 
@@ -13,10 +15,7 @@ Future<void> maybeShowUpdateLaunchPrompt(BuildContext context, WidgetRef ref) as
   final info = await ref.read(updateControllerProvider.notifier).checkForUpdate();
   if (!context.mounted || info == null) return;
 
-  final notes = info.notes.trim();
-  final message = notes.isEmpty
-      ? 'Version ${info.versionName} is available.'
-      : 'Version ${info.versionName} is available.\n\n$notes';
+  final message = UpdatePublisher.availableMessage(info.versionName);
 
   final updateNow = await showAppleConfirmDialog(
     context,
