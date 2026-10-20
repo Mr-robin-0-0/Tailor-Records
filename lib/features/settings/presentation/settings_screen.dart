@@ -44,7 +44,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _checkForUpdate() async {
-    await ref.read(updateControllerProvider.notifier).checkForUpdate();
+    final info = await ref.read(updateControllerProvider.notifier).checkForUpdate();
+    if (!mounted) return;
+
+    final state = ref.read(updateControllerProvider);
+    if (state.phase == UpdateFlowPhase.error) {
+      showAppleSnackBar(context, state.errorMessage ?? 'Could not check for updates');
+      return;
+    }
+
+    if (info == null) {
+      final pkg = await ref.read(packageInfoProvider.future);
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: const Text('Up to date'),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Tailor Records ${pkg.version} (${pkg.buildNumber}) is the latest release.',
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final download = await showAppleConfirmDialog(
+      context,
+      title: 'Update available',
+      message: 'Version ${info.versionName} is available on GitHub.',
+      cancel: 'Later',
+      confirm: 'Download',
+    );
+    if (download == true && mounted) {
+      await _downloadAndInstall();
+    }
   }
 
   Future<void> _downloadAndInstall() async {
